@@ -8,12 +8,6 @@ public class Bob {
     private BigInteger q; // A large secret prime number
     private BigInteger d; // Private key
 
-    // Function to generate prime numbers
-    private static BigInteger generatePrime() {
-        SecureRandom rand = new SecureRandom();
-        return BigInteger.probablePrime(512, rand); // 512 bit size of prime
-    }
-
     // Constructor to generate keys directly when a Bob object is created
     public Bob() {
         this.p = generatePrime();
@@ -26,6 +20,12 @@ public class Bob {
         // Compute d, the modular inverse of e mod φ(n)
         BigInteger phiN = (p.subtract(BigInteger.ONE)).multiply(q.subtract(BigInteger.ONE));
         this.d = e.modInverse(phiN);
+    }
+
+    // Function to generate prime numbers
+    private static BigInteger generatePrime() {
+        SecureRandom rand = new SecureRandom();
+        return BigInteger.probablePrime(512, rand); // 512 bit size of prime
     }
 
     // Decrypts a message with Alice's ciphertext
