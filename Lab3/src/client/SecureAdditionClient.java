@@ -11,8 +11,8 @@ public class SecureAdditionClient {
 	private int port;
 	// This is not a reserved port number 
 	static final int DEFAULT_PORT = 8189;
-	static final String KEYSTORE = "LIUkeystore.ks";
-	static final String TRUSTSTORE = "LIUtruststore.ks";
+	static final String KEYSTORE = "src/client/LIUkeystore.ks";
+	static final String TRUSTSTORE = "src/client/LIUtruststore.ks";
 	static final String KEYSTOREPASS = "123456";
 	static final String TRUSTSTOREPASS = "abcdef";
   
@@ -27,6 +27,7 @@ public class SecureAdditionClient {
   // The method used to start a client object
 	public void run() {
 		try {
+
 			KeyStore ks = KeyStore.getInstance( "JCEKS" );
 			ks.load( new FileInputStream( KEYSTORE ), KEYSTOREPASS.toCharArray() );
 			
@@ -45,18 +46,92 @@ public class SecureAdditionClient {
 			SSLSocket client =  (SSLSocket)sslFact.createSocket(host, port);
 			client.setEnabledCipherSuites( client.getSupportedCipherSuites() );
 			System.out.println("\n>>>> SSL/TLS handshake completed");
-
 			
 			BufferedReader socketIn;
 			socketIn = new BufferedReader( new InputStreamReader( client.getInputStream() ) );
 			PrintWriter socketOut = new PrintWriter( client.getOutputStream(), true );
+
+			//
+			BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
 			
+			// Sending numbers to the server (old code)
+			/*
 			String numbers = "1.2 3.4 5.6";
 			System.out.println( ">>>> Sending the numbers " + numbers+ " to SecureAdditionServer" );
 			socketOut.println( numbers );
 			System.out.println( socketIn.readLine() );
-
+			
 			socketOut.println ( "" );
+			*/
+
+			while (true) {
+                System.out.println("Enter command: UPLOAD, DOWNLOAD, DELETE followed by filename (or EXIT to quit):");
+                String command = userInput.readLine();
+                
+				// Quit the program with EXIT
+                if (command.equalsIgnoreCase("EXIT")) {
+                    break;
+                }
+
+				// Send command to server
+                socketOut.println(command);
+
+				// Upload code
+                if (command.startsWith("UPLOAD")) {
+                    String filename = command.split(" ")[1];
+                    File file = new File(filename);
+                    if (file.exists()) {
+                        System.out.println("Uploading file: " + filename);
+                        BufferedReader fileReader = new BufferedReader(new FileReader(file));
+                        String line;
+                        while ((line = fileReader.readLine()) != null) {
+                            socketOut.println(line);
+                        }
+                        socketOut.println(""); // Indicate end of file
+                        fileReader.close();
+
+                        // Wait for server confirmation of upload success
+                        String serverResponse = socketIn.readLine();
+                        if (serverResponse.equals("File uploaded successfully.")) {
+                            System.out.println("File uploaded successfully: " + filename);
+                        } else {
+                            System.out.println("Server error during upload: " + serverResponse);
+                        }
+                    } else {
+                        System.out.println("File not found: " + filename);
+                    }
+
+				// Download code
+                } else if (command.startsWith("DOWNLOAD")) {
+                    String filename = command.split(" ")[1];
+
+                    // Read server response
+                    String response = socketIn.readLine();
+                    if (response.equals("File found")) {
+                        // Open a local file to save the downloaded content
+                        PrintWriter fileOut = new PrintWriter(new FileWriter(filename));
+
+                        String line;
+                        System.out.println("Downloading file...");
+                        while (!(line = socketIn.readLine()).equals("")) {
+                            fileOut.println(line);  // Save each line from the server to the file
+                        }
+                        fileOut.close();
+                        System.out.println("File downloaded successfully.");
+                    } else {
+                        System.out.println("File not found on server.");
+                    }
+
+				// Delete code
+                } else if (command.startsWith("DELETE")) {
+                    String response = socketIn.readLine();
+                    System.out.println(response); // Server response for deletion
+                } else {
+                    System.out.println("Invalid command. Use UPLOAD, DOWNLOAD, DELETE, or EXIT.");
+                }
+            }
+
+			
 		}
 		catch( Exception x ) {
 			System.out.println( x );
@@ -67,6 +142,7 @@ public class SecureAdditionClient {
 	
 	// The test method for the class @param args Optional port number and host name
 	public static void main( String[] args ) {
+		System.out.println("Current working directory: " + new File(".").getAbsolutePath());
 		try {
 			InetAddress host = InetAddress.getLocalHost();
 			int port = DEFAULT_PORT;
