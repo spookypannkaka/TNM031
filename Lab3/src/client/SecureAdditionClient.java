@@ -28,9 +28,11 @@ public class SecureAdditionClient {
 	public void run() {
 		try {
 
+			// Load the keystore file, with the client's private key and certificates
 			KeyStore ks = KeyStore.getInstance( "JCEKS" );
 			ks.load( new FileInputStream( KEYSTORE ), KEYSTOREPASS.toCharArray() );
 			
+			// Load trusted certificates, has the server's certificate
 			KeyStore ts = KeyStore.getInstance( "JCEKS" );
 			ts.load( new FileInputStream( TRUSTSTORE ), TRUSTSTOREPASS.toCharArray() );
 			
@@ -40,10 +42,10 @@ public class SecureAdditionClient {
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance( "SunX509" );
 			tmf.init( ts );
 			
-			SSLContext sslContext = SSLContext.getInstance( "TLS" );
-			sslContext.init( kmf.getKeyManagers(), tmf.getTrustManagers(), null );
+			SSLContext sslContext = SSLContext.getInstance( "TLS" ); // TLS as chosen protocol
+			sslContext.init( kmf.getKeyManagers(), tmf.getTrustManagers(), null ); // Initialize key managers that hold certificates
 			SSLSocketFactory sslFact = sslContext.getSocketFactory();      	
-			SSLSocket client =  (SSLSocket)sslFact.createSocket(host, port);
+			SSLSocket client =  (SSLSocket)sslFact.createSocket(host, port); // Here we connect with the server
 			client.setEnabledCipherSuites( client.getSupportedCipherSuites() );
 			System.out.println("\n>>>> SSL/TLS handshake completed");
 			
@@ -142,7 +144,6 @@ public class SecureAdditionClient {
 	
 	// The test method for the class @param args Optional port number and host name
 	public static void main( String[] args ) {
-		System.out.println("Current working directory: " + new File(".").getAbsolutePath());
 		try {
 			InetAddress host = InetAddress.getLocalHost();
 			int port = DEFAULT_PORT;
